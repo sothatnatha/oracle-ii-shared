@@ -1,5 +1,5 @@
 # oracle-ii-shared
-Shared about oracle term 2 in my course.
+# Lession4 Manipulating Large Data Sets
 
 SELECT *
 FROM employees ;
