@@ -252,3 +252,155 @@ FROM sales_source_date;
 SELECT * 
 FROM sales_info
 ORDER BY 1, 3;
+
+
+-----------------------------------------------
+-- Lesson 4 | Using Merg Statement
+
+CREATE TABLE tbl_merg_emp (
+    id number(5) PRIMARY KEY,
+    name varchar2(25),
+    salary number(7,2)
+);
+
+SELECT *
+FROM tbl_merg_emp;
+
+INSERT INTO tbl_merg_emp -- paste
+    SELECT employee_id, last_name, salary
+    FROM employees
+    WHERE commission_pct IS NOT NULL; -- copy
+    
+
+MERGE INTO tbl_merg_emp des
+USING(SELECT 179 AS id, 'Sothatna' AS name, 1900 AS salary FROM DUAL) src
+ON (des.id=src.id)
+WHEN MATCHED THEN
+    UPDATE SET des.name = src.name, des.salary = src.salary
+WHEN NOT MATCHED THEN
+    INSERT VALUES(src.id, src.name, src.salary);
+    
+--
+MERGE INTO tbl_merg_emp des
+USING(SELECT 179 AS id, 'Sothatna' AS name, 1900 AS salary , 'Delete' AS opt_del FROM DUAL) src
+ON (des.id=src.id)
+WHEN MATCHED THEN
+    UPDATE SET des.name = src.name, des.salary = src.salary
+    DELETE WHERE (opt_del='Delete')
+WHEN NOT MATCHED THEN
+    INSERT VALUES(src.id, src.name, src.salary);
+    
+    
+
+-- Adding column to table tbl_merg_emp
+ALTER TABLE tbl_merg_emp
+ADD department_id NUMBER(5);
+
+
+MERGE INTO tbl_merg_emp des
+USING(SELECT employee_id, last_name, salary, department_id
+    FROM employees) src
+ON(src.employee_id = des.id)
+WHEN MATCHED THEN 
+    UPDATE SET des.department_id = src.department_id
+WHEN NOT MATCHED THEN 
+    INSERT (des.id, des.name, des.salary, des.department_id)
+    VALUES (src.employee_id, src.last_name, src.salary, src.department_id);
+
+
+-- Retrieve data
+SELECT *
+FROM tbl_merg_emp;
+
+
+-- Save data
+COMMIT;
+
+--
+-- Using tracking data chages over a period time.
+-- scn = system change number
+
+UPDATE tbl_merg_emp
+SET salary=2500
+WHERE id = 179;
+
+UPDATE tbl_merg_emp
+SET salary=5000
+WHERE id = 179;
+
+COMMIT;
+
+SELECT salary
+FROM tbl_merg_emp
+VERSIONS BETWEEN SCN MINVALUE AND MAXVALUE
+WHERE id = 179;
+
+
+SELECT versions_starttime, versions_endtime, salary
+FROM tbl_merg_emp
+VERSIONS BETWEEN SCN MINVALUE AND MAXVALUE
+WHERE id = 179;
+
+--------------------------------------------------------------------------
+-- Lesson 5 | Managing Data in Difference timezone
+ 
+CREATE TABLE tb_products(
+    pid number(5) primary key,
+    pname varchar2(25) UNIQUE,
+    qty NUMBER(5),
+    price number(7,2),
+    created_date date,
+    expiry_ym interval year to month,
+    expiry_ds interval day to second
+);
+
+INSERT INTO tb_products
+VALUES (123, 'Coke', 3000, 12, sysdate, '2-3', '15 5:30:00');
+
+INSERT INTO tb_products
+VALUES (321, 'Pepsi', 8000, 19, sysdate, INTERVAL '5' YEAR, INTERVAL '15 5' DAY TO HOUR);
+
+SELECT pname, qty, price, created_date, expiry_ym, expiry_ds, to_char(created_date+expiry_ym+expiry_ds, 'DD-MM-YY HH:MM:SS')
+FROM tb_products;
+
+-- systdate + 2y + 3m + 15d + 15h + 30mn
+-- day (+, -, *, /)
+-- month_between, add_month
+
+SELECT sysdate, to_char(add_months(sysdate, 2 * 12 + 3)+15+15/24+30/60/24, 'DD-MM-YY HH:MI:SS') new_date
+FROM dual;
+
+
+-- Extract Date
+-- extract(day from sysdate)
+-- extract(month from sysdate)
+-- extract(year from sysdate)
+
+SELECT sysdate, extract(year from sysdate)
+FROM dual;
+
+
+
+-- TZ_OFFSET
+
+SELECT *
+FROM V$TIMEZONE_NAMES;
+
+SELECT TZ_OFFSET('Africa/Addis_Ababa')
+FROM dual;
+
+-- FROM_TZ
+-- SELECT FROM_TZ(timestamp, '2000-07-12 08:00:00', 'Africa/Addis_Ababa')
+-- FROM dual;
+
+-- To_Timestamp
+SELECT TO_TIMESTAMP('22-06-2023', 'dd-mm-yyyy')
+FROM dual;
+
+-- 
+SELECT TO_DATE('22-06-2023', 'dd-mm-yyyy')+3
+FROM dual;
+
+-- TO_YMINTERVAL
+SELECT TO_YMINTERVAL('5-3') + sysdate, TO_DSINTERVAL('10 5:5:5')
+FROM dual;
