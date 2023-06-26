@@ -404,3 +404,131 @@ FROM dual;
 -- TO_YMINTERVAL
 SELECT TO_YMINTERVAL('5-3') + sysdate, TO_DSINTERVAL('10 5:5:5')
 FROM dual;
+
+
+-------------------Stock Management------------------
+
+CREATE table product_ss1 (
+    pid number(5) primary key,
+    pname varchar2(25) not null unique,
+    qty_stock number(5) check(qty_stock>=0),
+    price number(7,2)
+);
+
+Insert into product_ss1 values(1, 'coca', 1000, 1.5);
+Insert into product_ss1 values(2, 'pepsi', 2000, 2.5);
+Insert into product_ss1 values(3, 'fanta', 1500, 1.2);
+Insert into product_ss1 values(4, 'sprite', 1000, 1.5);
+Insert into product_ss1 values(5, 'abc', 1100, 1.6);
+
+-- CREAE seq for generate order id
+CREATE SEQUENCE order_ss1_id_seq START WITH 1000;
+    
+-- create table invoices
+CREATE TABLE order_ss1 (
+    oid number(5) DEFAULT order_ss1_id_seq.NEXTVAL primary key,
+    oDate DATE default sysdate,
+    cust VARCHAR2(25)
+);
+
+-- order details
+
+create table order_detail_ss1 (
+    oid number(5) default order_ss1_id_seq.CURRVAL REFERENCES order_ss1(oid),
+    pid number(5) REFERENCES product_ss1(pid),
+    qty_order number(5),
+    
+    PRIMARY KEY(oid, pid) -- make order increment only qty when have the same order.
+);
+
+-- Create table store data temporary
+CREATE GLOBAL TEMPORARY TABLE cart_ss1(
+    pid number(5),
+    qty_order number(5)
+);
+    
+    
+    
+-- Show products to customer
+SELECT *
+FROM product_ss1;
+
+
+-- Add order to cart
+INSERT INTO cart_ss1 VALUES(2, 10);
+INSERT INTO cart_ss1 VALUES(4, 20);
+INSERT INTO cart_ss1 VALUES(1, 30);
+INSERT INTO cart_ss1 VALUES(5, 15);
+
+
+
+-- Show info in cart
+-- Join table product to show name, price...
+
+SELECT pid, pname, qty_order, price, price*qty_order Total
+FROM cart_ss1 
+JOIN product_ss1
+USING(pid);
+
+-- Sum sub-total
+SELECT SUM(price*qty_order) Total
+FROM cart_ss1 
+JOIN product_ss1
+USING(pid);
+
+
+-- Combined into 1 row
+SELECT pid, pname, qty_order, price, price*qty_order Total
+FROM cart_ss1 
+JOIN product_ss1
+USING(pid)
+UNION ALL
+SELECT null, 'Total', null, null, SUM(price*qty_order) Total
+FROM cart_ss1 
+JOIN product_ss1
+USING(pid);
+
+
+-- Checkout or pay
+
+INSERT INTO order_ss1 (cust)
+VALUES(USER);
+
+SELECT * FROM order_ss1;
+
+-- Insert to table order details
+INSERT INTO order_detail_ss1(pid, qty_order)
+    SELECT pid, qty_order
+    FROM cart_ss1;
+
+
+-- Update stock (kat stock)
+UPDATE product_ss1 p
+SET qty_stock = qty_stock - (SELECT qty_order 
+                                FROM cart_ss1 c
+                                WHERE c.pid = p.pid)
+WHERE pid IN (SELECT pid FROM cart_ss1);
+
+-- Save the orders
+Commit;
+
+
+SELECT* 
+FROM cart_ss1;
+SELECT* 
+FROM product_ss1;
+SELECT* 
+FROM order_ss1;
+SELECT* 
+FROM order_detail_ss1;
+
+-- More on lession 6
+-- Change default format date on database oracle
+ALTER SESSION 
+SET nls_date_format = 'DD-MON-RR HH:MI:SS';
+
+
+SELECT sysdate 
+FROM dual;
+
+-------------------End Stock Management--------------
