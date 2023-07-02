@@ -537,7 +537,9 @@ FROM dual;
 # Final Year3 Semester 2 Reviews
 -- Reviews final exam Year3 Semester2
 -- Tha Sothatna SS1
+
 -- alter session set "_ORACLE_SCRIPT"=true;
+
 --1
 CREATE USER Jonh 
     IDENTIFIED BY jonh12345 
@@ -557,7 +559,16 @@ CREATE TABLE employees (
     job_id varchar2(10),
     salary number(8,2),
     manager_id number(6,0),
-    department_id number(4,0)
+    department_id number(4,0),
+    
+    CONSTRAINT job_id_fk 
+        FOREIGN KEY(job_id)
+        REFERENCES jobs (job_id) 
+        ON DELETE CASCADE, -- or SET NULL
+    CONSTRAINT dept_id_fk 
+        FOREIGN KEY(department_id)
+        REFERENCES departments (department_id) 
+        ON DELETE CASCADE -- or SET NULL
 );
 CREATE TABLE jobs(
     job_id VARCHAR2(10) primary key,
@@ -664,46 +675,50 @@ ALTER SESSION SET nls_date_format = 'DD-MM-YYYY HH:MI:SS';
 
 --13
 SELECT *
-FROM employees
+FROM employees outer_emp
 WHERE NOT EXISTS (SELECT * 
-                    FROM employees 
-                    WHERE job_id = 'supervisor');
+                    FROM employees inner_emp
+                    WHERE inner_emp.manager_id = outer_emp.manager_id);
 --14 
 SELECT *
-FROM employees
-WHERE job_id NOT IN 'supervisor';
+FROM employees outer_emp 
+WHERE employee_id NOT IN (SELECT manager_id 
+                            FROM employees inner_emp
+                            WHERE inner_emp.manager_id IS NOT NULL);
 
 
 --15
 CREATE TABLE emp01 (
-    id NUMBER(5),
+    id NUMBER(5) primary key,
     sal NUMBER(7,2)
 );
 CREATE TABLE emp2 (
-    id NUMBER(5),
+    id NUMBER(5) primary key,
     dates DATE
 );
 
 CREATE TABLE emp3 (
-      id NUMBER(5),
-    dates DATE
+      id NUMBER(5) primary key,
+      dates DATE
 );
 CREATE TABLE emp4 (
-     id NUMBER(5),
+     id NUMBER(5) primary key,
     dates DATE
 );
 
 --16
---INSERT FIRST
---    WHEN salary > 12000 THEN
---        INTO emp1 VALUES (system.employee_id, salary)
---    WHEN employee_id < 60 THEN
---        INTO emp2 VALUES (employee_id, system.hire_date)
---    WHEN sysdate > '10-sep-09' THEN 
---        INTO emp3 (system.employee_id, system.hire_date)
---    ELSE 
---        INTO emp4 (system.employee_id, system.hire_date)
-SELECT department_id, SUM(salary), MIN(hire_date)
+INSERT FIRST
+    WHEN salary < 12000 THEN
+        INTO emp01 VALUES (id, salary)
+    WHEN id < 60 THEN
+        INTO emp2 VALUES (id, hire_date)
+    WHEN hire_date > '10-SEP-09' THEN 
+        INTO emp3 VALUES (id, hire_date)
+    ELSE 
+        INTO emp4 VALUES (id, hire_date)
+        
+SELECT department_id id, SUM(salary) salary, MIN(hire_date) hire_date
 FROM system.employees e
 GROUP BY e.department_id;
+
 
