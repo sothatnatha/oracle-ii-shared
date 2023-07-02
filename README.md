@@ -532,3 +532,176 @@ SELECT sysdate
 FROM dual;
 
 -------------------End Stock Management--------------
+
+
+# Final Year3 Semester 2 Reviews
+-- Reviews final exam Year3 Semester2
+-- Tha Sothatna SS1
+-- alter session set "_ORACLE_SCRIPT"=true;
+--1
+CREATE USER Jonh IDENTIFIED BY jonh12345;
+ALTER USER Jonh QUOTA 50M ON USERS;
+
+--2
+GRANT CREATE SESSION, CREATE TABLE, CREATE VIEW, CREATE SEQUENCE, CREATE SYNONYM, 
+CREATE ANY INDEX
+TO Jonh;
+
+--Connect to user Jonh.
+--3
+CREATE TABLE employees (
+    employee_id number(6,0) primary key,
+    last_name VARCHAR2(25),
+    job_id varchar2(10),
+    salary number(8,2),
+    manager_id number(6,0),
+    department_id number(4,0)
+);
+CREATE TABLE jobs(
+    job_id VARCHAR2(10) primary key,
+    job_title VARCHAR2(35),
+    min_salary NUMBER(6,0),
+    max_salary NUMBER(6,0)
+);
+CREATE TABLE departments (
+    department_id NUMBER(4,0) primary key,
+    department_name VARCHAR2(30)
+);
+
+
+--4
+-- Table Jobs
+INSERT INTO jobs (job_id, job_title, min_salary, max_salary)
+VALUES('AD_PRES', 'President', 20000, 40000);
+
+INSERT INTO jobs (job_id, job_title, min_salary, max_salary)
+VALUES('AD_VP', 'Administration Vice President', 15000, 30000);
+
+INSERT INTO jobs (job_id, job_title, min_salary, max_salary)
+VALUES('IT_PROG', 'Programmer', 4000, 10000);
+
+-- Table Departments
+INSERT INTO departments VALUES(60, 'IT');
+INSERT INTO departments VALUES(90, 'Executive');
+
+-- Table employees
+
+INSERT INTO employees
+VALUES(100, 'King', 'AD_PRES', 24000, Null, 90);
+
+INSERT INTO employees
+VALUES(101, 'Kochhar', 'AD_VP', 17000, 100, 90);
+
+INSERT INTO employees
+VALUES(102, 'De Haan', 'AD_VP', 17000, 100, 90);
+
+INSERT INTO employees
+VALUES(103, 'Hunnold', 'IT_PROG', 9000, 102, 60);
+
+INSERT INTO employees
+VALUES(104, 'Justna', 'AD_VP', 9000, 100, 60);
+
+
+--5
+CREATE VIEW Employee_Department AS
+    SELECT e.employee_id, e.last_name, j.job_title
+    FROM employees e
+    JOIN jobs j
+    USING(job_id);
+    
+--6
+CREATE SYNONYM emp1
+FOR Employee_Department;
+
+--7 
+SELECT *
+FROM employees 
+WHERE department_id = ( SELECT department_id 
+                        FROM departments 
+                        WHERE department_name='IT');
+            
+--8
+SELECT *
+FROM employees
+WHERE salary > ( SELECT MIN(salary) FROM employees);
+
+--9
+SELECT *
+FROM employees 
+WHERE job_id = ( SELECT job_id 
+                 FROM employees 
+                 WHERE last_name = 'Kochhar');
+
+--10
+SELECT last_name, ( SELECT department_name 
+                    FROM departments d WHERE d.department_id = e.department_id) department_name
+FROM employees e;
+
+--11
+--Convert statement to NONPAREWISE
+
+-- PAREWISE statement
+SELECT * 
+FROM employees
+WHERE (manager_id, department_id) IN (SELECT manager_id, department_id 
+                                        FROM employees 
+                                        WHERE employee_id = 102);
+                 
+-- To NONPAREWISE statement
+SELECT *
+FROM employees
+WHERE manager_id = (SELECT manager_id
+                    FROM employees
+                    WHERE employee_id = 102)
+AND department_id = (SELECT department_id
+                     FROM employees
+                     WHERE employee_id = 102);
+
+--12
+ALTER SESSION SET nls_date_format = 'DD-MM-YYYY HH:MI:SS';
+
+--13
+SELECT *
+FROM employees
+WHERE NOT EXISTS (SELECT * 
+                    FROM employees 
+                    WHERE job_id = 'supervisor');
+--14 
+SELECT *
+FROM employees
+WHERE job_id NOT IN 'supervisor';
+
+
+--15
+CREATE TABLE emp01 (
+    id NUMBER(5),
+    sal NUMBER(7,2)
+);
+CREATE TABLE emp2 (
+    id NUMBER(5),
+    dates DATE
+);
+
+CREATE TABLE emp3 (
+      id NUMBER(5),
+    dates DATE
+);
+CREATE TABLE emp4 (
+     id NUMBER(5),
+    dates DATE
+);
+
+--16
+--INSERT FIRST
+--    WHEN salary > 12000 THEN
+--        INTO emp1 VALUES (system.employee_id, salary)
+--    WHEN employee_id < 60 THEN
+--        INTO emp2 VALUES (employee_id, system.hire_date)
+--    WHEN sysdate > '10-sep-09' THEN 
+--        INTO emp3 (system.employee_id, system.hire_date)
+--    ELSE 
+--        INTO emp4 (system.employee_id, system.hire_date)
+SELECT department_id, SUM(salary), MIN(hire_date)
+FROM system.employees e
+GROUP BY e.department_id;
+
