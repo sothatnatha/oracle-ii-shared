@@ -1,6 +1,8 @@
 # oracle-ii-shared
 # Lession4 Manipulating Large Data Sets
 
+Just add simple text for testing.
+
 SELECT *
 FROM employees ;
 
